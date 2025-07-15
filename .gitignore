@@ -33,7 +33,6 @@ build/
 .vscode/
 
 # Spring Boot properties
-application.properties
 application.yml
 
 # Logs
