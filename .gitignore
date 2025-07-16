@@ -35,9 +35,18 @@ build/
 # Spring Boot properties
 application.yml
 
+
+
 # Logs
 *.log
 
 # Database (si locale)
 *.db
 *.h2.db
+
+# environment
+.env
+
+# Cache et builds
+/target
+/.idea
