@@ -7,9 +7,8 @@ import java.util.List;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Schema(description = "DTO used to create a new worker")
 public class WorkerCreateDto {
-    @Schema(example = "Ali Ben Salah")
-    private String fullName;
-
+    // ❌ Supprimer fullName - on le récupère depuis User
+    
     @Schema(example = "Electrician")
     private String jobType;
 
@@ -22,4 +21,8 @@ public class WorkerCreateDto {
     @Schema(example = "etc...")
     private String description;
 
+    @Schema(description = "User ID who becomes a worker", hidden = true)
+    private String userId;
 }
+
+

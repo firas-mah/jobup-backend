@@ -3,8 +3,10 @@ package com.example.jobup.services;
 import com.example.jobup.dto.WorkerCreateDto;
 import com.example.jobup.dto.WorkerUpdateDto;
 import com.example.jobup.dto.WorkerResponseDto;
+import com.example.jobup.entities.User;
 import com.example.jobup.entities.Worker;
 import com.example.jobup.mapper.WorkerMapper;
+import com.example.jobup.repositories.UserRepository;
 import com.example.jobup.repositories.WorkerRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,8 @@ public class WorkerService implements IWorkerService {
 
     private final WorkerRepo workerRepo;
     private final WorkerMapper workerMapper;
+    private final UserRoleService userRoleService;
+    private final UserRepository userRepository;
 
     public List<WorkerResponseDto> getAllWorkers() {
         return workerRepo.findAll()
@@ -35,8 +39,19 @@ public class WorkerService implements IWorkerService {
     }
 
     public WorkerResponseDto createWorker(WorkerCreateDto dto) {
+        // Récupérer le User pour obtenir son fullName
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
         Worker entity = workerMapper.toEntity(dto);
+        entity.setFullName(user.getUsername()); // Récupérer depuis User
+        entity.setId(dto.getUserId());
+        
         Worker saved = workerRepo.save(entity);
+        
+        // Ajouter le rôle WORKER à l'utilisateur
+        userRoleService.addWorkerRole(dto.getUserId());
+        
         return workerMapper.toResponseDto(saved);
     }
 
