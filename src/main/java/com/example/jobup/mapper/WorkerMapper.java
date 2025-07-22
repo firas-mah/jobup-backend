@@ -11,6 +11,9 @@ public interface WorkerMapper {
     WorkerResponseDto toResponseDto(Worker worker);
 
     // 🔁 Convertir DTO de création → entity
+    @Mapping(target = "fullName", ignore = true) // Ignoré car défini manuellement
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "rating", ignore = true)
     Worker toEntity(WorkerCreateDto dto);
 
     // 🔁 Convertir DTO de mise à jour → entity

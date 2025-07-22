@@ -87,4 +87,22 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
+
+    // Ajouter ces méthodes utilitaires
+    public boolean hasRole(Role role) {
+        return roles.contains(role);
+    }
+
+    public void addRole(Role role) {
+        this.roles.add(role);
+    }
+
+    public boolean isWorker() {
+        return hasRole(Role.ROLE_WORKER);
+    }
+
+    public boolean isClient() {
+        return hasRole(Role.ROLE_CLIENT);
+    }
 }
+
