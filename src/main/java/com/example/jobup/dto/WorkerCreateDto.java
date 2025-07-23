@@ -21,7 +21,7 @@ public class WorkerCreateDto {
     @Schema(example = "etc...")
     private String description;
 
-    @Schema(description = "User ID who becomes a worker", hidden = true)
+    @Schema(description = "User ID who becomes a worker")
     private String userId;
 }
 
