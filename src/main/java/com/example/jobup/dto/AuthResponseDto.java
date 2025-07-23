@@ -14,4 +14,10 @@ public class AuthResponseDto {
     
     @Schema(example = "[\"ROLE_CLIENT\"]")
     private List<String> roles;
+
+    private String userId; // Add this field
+
+    @Schema(example = "johndoe")
+    private String username;
+
 }

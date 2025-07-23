@@ -66,6 +66,8 @@ public class AuthService {
                 .roles(savedUser.getRoles().stream()
                         .map(Enum::name)
                         .collect(Collectors.toList()))
+                .userId(savedUser.getId())
+                .username(savedUser.getUsername())
                 .build();
     }
 
@@ -95,6 +97,8 @@ public class AuthService {
                     .roles(user.getRoles().stream()
                             .map(Enum::name)
                             .collect(Collectors.toList()))
+                    .userId(user.getId()) // Add this line
+                    .username(user.getUsername())
                     .build();
 
         } catch (AuthenticationException e) {
