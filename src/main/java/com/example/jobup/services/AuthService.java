@@ -3,6 +3,7 @@ package com.example.jobup.services;
 import com.example.jobup.dto.AuthResponseDto;
 import com.example.jobup.dto.LoginRequestDto;
 import com.example.jobup.dto.RegisterRequestDto;
+import com.example.jobup.dto.UserUpdateRequestDto;
 import com.example.jobup.entities.Role;
 import com.example.jobup.entities.User;
 import com.example.jobup.repositories.UserRepository;
@@ -68,6 +69,7 @@ public class AuthService {
                         .collect(Collectors.toList()))
                 .userId(savedUser.getId())
                 .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
                 .build();
     }
 
@@ -97,13 +99,70 @@ public class AuthService {
                     .roles(user.getRoles().stream()
                             .map(Enum::name)
                             .collect(Collectors.toList()))
-                    .userId(user.getId()) // Add this line
+                    .userId(user.getId())
                     .username(user.getUsername())
+                    .email(user.getEmail())
                     .build();
 
         } catch (AuthenticationException e) {
             log.error("Authentication failed for user: {}", request.getUsername());
             throw new RuntimeException("Invalid username or password!");
         }
+    }
+
+    public AuthResponseDto updateUser(String userId, UserUpdateRequestDto request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Verify current password if provided
+        if (request.getCurrentPassword() != null && !request.getCurrentPassword().isEmpty()) {
+            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                throw new RuntimeException("Current password is incorrect");
+            }
+        }
+
+        // Update username if provided and not already taken
+        if (request.getUsername() != null && !request.getUsername().isEmpty()) {
+            if (!request.getUsername().equals(user.getUsername()) && 
+                userRepository.existsByUsername(request.getUsername())) {
+                throw new RuntimeException("Username is already taken!");
+            }
+            user.setUsername(request.getUsername());
+        }
+
+        // Update email if provided and not already taken
+        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
+            if (!request.getEmail().equals(user.getEmail()) && 
+                userRepository.existsByEmail(request.getEmail())) {
+                throw new RuntimeException("Email is already in use!");
+            }
+            user.setEmail(request.getEmail());
+        }
+
+        // Update password if provided
+        if (request.getNewPassword() != null && !request.getNewPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        }
+
+        User savedUser = userRepository.save(user);
+        log.info("User updated: {}", savedUser.getUsername());
+
+        // Generate new JWT token
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("roles", savedUser.getRoles().stream()
+                .map(Enum::name)
+                .collect(Collectors.toList()));
+
+        String token = jwtUtil.generateToken(savedUser, extraClaims);
+
+        return AuthResponseDto.builder()
+                .token(token)
+                .roles(savedUser.getRoles().stream()
+                        .map(Enum::name)
+                        .collect(Collectors.toList()))
+                .userId(savedUser.getId())
+                .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
+                .build();
     }
 }

@@ -3,6 +3,7 @@ package com.example.jobup.controller;
 import com.example.jobup.dto.AuthResponseDto;
 import com.example.jobup.dto.LoginRequestDto;
 import com.example.jobup.dto.RegisterRequestDto;
+import com.example.jobup.dto.UserUpdateRequestDto;
 import com.example.jobup.entities.User;
 import com.example.jobup.services.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +41,22 @@ public class AuthController {
     public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginRequestDto request) {
         try {
             AuthResponseDto response = authService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/update")
+    @Operation(summary = "Update current user info")
+    public ResponseEntity<AuthResponseDto> updateCurrentUser(
+        @Valid @RequestBody UserUpdateRequestDto request,
+        Authentication authentication
+    ) {
+        User user = (User) authentication.getPrincipal();
+        
+        try {
+            AuthResponseDto response = authService.updateUser(user.getId(), request);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
