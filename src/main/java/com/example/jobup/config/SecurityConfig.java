@@ -40,8 +40,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()  // Allow WebSocket connections
+                        .requestMatchers("/topic/**").permitAll() // Allow WebSocket topics
+                        .requestMatchers("/app/**").permitAll()   // Allow WebSocket app destinations
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/workers/**").permitAll() // Temporarily allow for testing
+                        .requestMatchers("/api/chat/**").permitAll() // Allow chat endpoints
+                        .requestMatchers("/api/proposals/**").permitAll() // Allow proposal endpoints
+                        .requestMatchers("/api/deals/**").permitAll() // Allow deal endpoints
                         // Protected endpoints - will be configured later
                         .anyRequest().authenticated()
                 )
