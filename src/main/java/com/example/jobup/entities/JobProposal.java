@@ -7,31 +7,34 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Document(collection = "chat_messages")
+@Document(collection = "job_proposals")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatMessage {
+public class JobProposal {
     @Id
     private String id;
     private String chatId;
     private String senderId;
     private String senderName;
     private String senderType;
-    private String content;
-    private LocalDateTime timestamp;
-    private MessageType messageType;
-    private String proposalId;
+    private String title;
+    private String description;
+    private Integer duration; // in hours
+    private BigDecimal price;
+    private String location;
+    private LocalDateTime scheduledTime;
+    private LocalDateTime createdAt;
+    private ProposalStatus status;
     
-    public enum MessageType {
-        TEXT,
-        PROPOSAL,
-        PROPOSAL_RESPONSE,
-        JOB_CONFIRMED,
-        JOB_COMPLETED,
-        RATING
+    public enum ProposalStatus {
+        PENDING,
+        ACCEPTED,
+        DECLINED,
+        NEGOTIATED
     }
 } 

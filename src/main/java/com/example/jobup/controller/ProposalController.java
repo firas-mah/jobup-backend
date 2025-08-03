@@ -1,19 +1,14 @@
 package com.example.jobup.controller;
 
-import com.example.jobup.dto.CreateProposalRequest;
-import com.example.jobup.dto.ProposalResponse;
-import com.example.jobup.entities.Role;
-import com.example.jobup.entities.User;
-import com.example.jobup.repositories.UserRepository;
+import com.example.jobup.dto.JobProposalDto;
+import com.example.jobup.entities.JobProposal;
 import com.example.jobup.services.ProposalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.data.mongodb.core.query.Query;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/proposals")
@@ -21,102 +16,79 @@ import java.util.stream.Collectors;
 public class ProposalController {
     
     private final ProposalService proposalService;
-    private final UserRepository userRepository;
     
     @PostMapping
-    public ResponseEntity<ProposalResponse> createProposal(
-            @RequestBody CreateProposalRequest request,
-            Authentication authentication) {
+    public ResponseEntity<JobProposalDto> createProposal(@RequestBody CreateProposalRequest request) {
+        JobProposalDto proposal = proposalService.createProposal(
+                request.getChatId(),
+                request.getSenderId(),
+                request.getSenderName(),
+                request.getSenderType(),
+                request.getTitle(),
+                request.getDescription(),
+                request.getDuration(),
+                request.getPrice(),
+                request.getLocation(),
+                request.getScheduledTime()
+        );
         
-        String userId = authentication.getName();
-        // Determine user type based on authentication
-        String userType = "CLIENT"; // This should be determined from user roles
-        
-        ProposalResponse response = proposalService.createProposal(request, userId, userType);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(proposal);
     }
     
-    @PostMapping("/{proposalId}/accept")
-    public ResponseEntity<ProposalResponse> acceptProposal(
+    @PutMapping("/{proposalId}/status")
+    public ResponseEntity<JobProposalDto> updateProposalStatus(
             @PathVariable String proposalId,
-            Authentication authentication) {
+            @RequestBody UpdateStatusRequest request) {
         
-        String userId = authentication.getName();
-        ProposalResponse response = proposalService.acceptProposal(proposalId, userId);
-        return ResponseEntity.ok(response);
+        JobProposalDto proposal = proposalService.updateProposalStatus(proposalId, request.getStatus());
+        return ResponseEntity.ok(proposal);
     }
     
-    @PostMapping("/{proposalId}/decline")
-    public ResponseEntity<ProposalResponse> declineProposal(
-            @PathVariable String proposalId,
-            Authentication authentication) {
-        
-        String userId = authentication.getName();
-        ProposalResponse response = proposalService.declineProposal(proposalId, userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    @PostMapping("/{proposalId}/negotiate")
-    public ResponseEntity<ProposalResponse> negotiateProposal(
-            @PathVariable String proposalId,
-            Authentication authentication) {
-        
-        String userId = authentication.getName();
-        ProposalResponse response = proposalService.negotiateProposal(proposalId, userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    @GetMapping("/my-proposals")
-    public ResponseEntity<List<ProposalResponse>> getMyProposals(Authentication authentication) {
-        String userId = authentication.getName();
-        System.out.println("=== DEBUG: getMyProposals ===");
-        System.out.println("User ID from authentication: " + userId);
-        
-        // Get user details to determine if they're a worker or client
-        User user = userRepository.findByUsername(userId).orElse(null);
-        boolean isWorker = user != null && user.hasRole(Role.ROLE_WORKER);
-        
-        System.out.println("User found: " + (user != null));
-        System.out.println("Is Worker: " + isWorker);
-        if (user != null) {
-            System.out.println("User ID: " + user.getId());
-            System.out.println("User roles: " + user.getRoles());
-        }
-        
-        List<ProposalResponse> proposals;
-        if (isWorker) {
-            // For workers: get proposals where they are the workerId (recipient)
-            System.out.println("Getting proposals for WORKER with ID: " + userId);
-            proposals = proposalService.getProposalsForWorker(userId);
-        } else {
-            // For clients: get proposals where they are the clientId (sender)
-            System.out.println("Getting proposals for CLIENT with ID: " + userId);
-            proposals = proposalService.getProposalsForClient(userId);
-        }
-        
-        System.out.println("Found " + proposals.size() + " proposals");
-        proposals.forEach(p -> {
-            System.out.println("Proposal - ID: " + p.getId() + 
-                              ", ClientId: " + p.getClientId() + 
-                              ", WorkerId: " + p.getWorkerId() + 
-                              ", SentBy: " + p.getSentBy() + 
-                              ", Status: " + p.getStatus());
-        });
-        
+    @GetMapping("/chat/{chatId}")
+    public ResponseEntity<List<JobProposalDto>> getProposalsByChatId(@PathVariable String chatId) {
+        List<JobProposalDto> proposals = proposalService.getProposalsByChatId(chatId);
         return ResponseEntity.ok(proposals);
     }
     
-    @GetMapping("/chat/{clientUsername}/{workerUsername}")
-    public ResponseEntity<List<ProposalResponse>> getProposalsBetweenUsers(
-            @PathVariable String clientUsername,
-            @PathVariable String workerUsername) {
+    public static class CreateProposalRequest {
+        private String chatId;
+        private String senderId;
+        private String senderName;
+        private String senderType;
+        private String title;
+        private String description;
+        private Integer duration;
+        private java.math.BigDecimal price;
+        private String location;
+        private LocalDateTime scheduledTime;
         
-        System.out.println("DEBUG: Searching proposals between clientUsername: " + clientUsername + " and workerUsername: " + workerUsername);
+        // Getters and setters
+        public String getChatId() { return chatId; }
+        public void setChatId(String chatId) { this.chatId = chatId; }
+        public String getSenderId() { return senderId; }
+        public void setSenderId(String senderId) { this.senderId = senderId; }
+        public String getSenderName() { return senderName; }
+        public void setSenderName(String senderName) { this.senderName = senderName; }
+        public String getSenderType() { return senderType; }
+        public void setSenderType(String senderType) { this.senderType = senderType; }
+        public String getTitle() { return title; }
+        public void setTitle(String title) { this.title = title; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public Integer getDuration() { return duration; }
+        public void setDuration(Integer duration) { this.duration = duration; }
+        public java.math.BigDecimal getPrice() { return price; }
+        public void setPrice(java.math.BigDecimal price) { this.price = price; }
+        public String getLocation() { return location; }
+        public void setLocation(String location) { this.location = location; }
+        public LocalDateTime getScheduledTime() { return scheduledTime; }
+        public void setScheduledTime(LocalDateTime scheduledTime) { this.scheduledTime = scheduledTime; }
+    }
+    
+    public static class UpdateStatusRequest {
+        private JobProposal.ProposalStatus status;
         
-        List<ProposalResponse> proposals = proposalService.getProposalsBetweenUsers(clientUsername, workerUsername);
-        
-        System.out.println("DEBUG: Found " + proposals.size() + " proposals between users");
-        
-        return ResponseEntity.ok(proposals);
+        public JobProposal.ProposalStatus getStatus() { return status; }
+        public void setStatus(JobProposal.ProposalStatus status) { this.status = status; }
     }
 } 
