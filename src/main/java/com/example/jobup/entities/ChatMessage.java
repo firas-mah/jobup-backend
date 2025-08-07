@@ -18,9 +18,17 @@ public class ChatMessage {
     @Id
     private String id;
     private String chatId;
+    
+    // Sender information
     private String senderId;
     private String senderName;
-    private String senderType;
+    private String senderType; // CLIENT or WORKER
+    
+    // Receiver information (NEW FIELDS)
+    private String receiverId;
+    private String receiverName;
+    private String receiverType; // CLIENT or WORKER
+    
     private String content;
     private LocalDateTime timestamp;
     private MessageType messageType;
@@ -34,4 +42,4 @@ public class ChatMessage {
         JOB_COMPLETED,
         RATING
     }
-} 
+}

@@ -24,12 +24,16 @@ public class ChatService {
     }
     
     public ChatMessageDto sendMessage(String chatId, String senderId, String senderName, 
-                                   String senderType, String content, ChatMessage.MessageType messageType) {
+                                   String senderType, String receiverId, String receiverName,
+                                   String receiverType, String content, ChatMessage.MessageType messageType) {
         ChatMessage message = ChatMessage.builder()
                 .chatId(chatId)
                 .senderId(senderId)
                 .senderName(senderName)
                 .senderType(senderType)
+                .receiverId(receiverId)
+                .receiverName(receiverName)
+                .receiverType(receiverType)
                 .content(content)
                 .messageType(messageType)
                 .timestamp(LocalDateTime.now())
@@ -39,6 +43,20 @@ public class ChatService {
         return convertToDto(savedMessage);
     }
     
+    public List<ChatMessageDto> getMessagesByReceiverId(String receiverId) {
+        List<ChatMessage> messages = chatMessageRepository.findByReceiverIdOrderByTimestampDesc(receiverId);
+        return messages.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    public List<ChatMessageDto> getMessagesByReceiverIdAndType(String receiverId, String receiverType) {
+        List<ChatMessage> messages = chatMessageRepository.findByReceiverIdAndReceiverTypeOrderByTimestampDesc(receiverId, receiverType);
+        return messages.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
     private ChatMessageDto convertToDto(ChatMessage message) {
         return ChatMessageDto.builder()
                 .id(message.getId())
@@ -46,6 +64,9 @@ public class ChatService {
                 .senderId(message.getSenderId())
                 .senderName(message.getSenderName())
                 .senderType(message.getSenderType())
+                .receiverId(message.getReceiverId())
+                .receiverName(message.getReceiverName())
+                .receiverType(message.getReceiverType())
                 .content(message.getContent())
                 .timestamp(message.getTimestamp())
                 .messageType(message.getMessageType())

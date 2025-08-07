@@ -17,7 +17,8 @@ public class ProposalService {
     private final JobProposalRepository proposalRepository;
     
     public JobProposalDto createProposal(String chatId, String senderId, String senderName, 
-                                       String senderType, String title, String description, 
+                                       String senderType, String receiverId, String receiverName,
+                                       String receiverType, String title, String description, 
                                        Integer duration, java.math.BigDecimal price, 
                                        String location, LocalDateTime scheduledTime) {
         JobProposal proposal = JobProposal.builder()
@@ -25,6 +26,9 @@ public class ProposalService {
                 .senderId(senderId)
                 .senderName(senderName)
                 .senderType(senderType)
+                .receiverId(receiverId)
+                .receiverName(receiverName)
+                .receiverType(receiverType)
                 .title(title)
                 .description(description)
                 .duration(duration)
@@ -54,6 +58,20 @@ public class ProposalService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
+
+    public List<JobProposalDto> getProposalsByWorkerId(String workerId) {
+        List<JobProposal> proposals = proposalRepository.findByReceiverIdAndReceiverTypeOrderByCreatedAtDesc(workerId, "ROLE_WORKER");
+        return proposals.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<JobProposalDto> getProposalsByClientId(String clientId) {
+        List<JobProposal> proposals = proposalRepository.findByReceiverIdAndReceiverTypeOrderByCreatedAtDesc(clientId, "CLIENT");
+        return proposals.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
     
     private JobProposalDto convertToDto(JobProposal proposal) {
         return JobProposalDto.builder()
@@ -62,6 +80,9 @@ public class ProposalService {
                 .senderId(proposal.getSenderId())
                 .senderName(proposal.getSenderName())
                 .senderType(proposal.getSenderType())
+                .receiverId(proposal.getReceiverId())
+                .receiverName(proposal.getReceiverName())
+                .receiverType(proposal.getReceiverType())
                 .title(proposal.getTitle())
                 .description(proposal.getDescription())
                 .duration(proposal.getDuration())

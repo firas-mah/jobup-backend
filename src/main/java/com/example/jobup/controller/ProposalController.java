@@ -13,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/proposals")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class ProposalController {
     
     private final ProposalService proposalService;
@@ -24,6 +25,9 @@ public class ProposalController {
                 request.getSenderId(),
                 request.getSenderName(),
                 request.getSenderType(),
+                request.getReceiverId(),
+                request.getReceiverName(),
+                request.getReceiverType(),
                 request.getTitle(),
                 request.getDescription(),
                 request.getDuration(),
@@ -50,11 +54,26 @@ public class ProposalController {
         return ResponseEntity.ok(proposals);
     }
     
+    @GetMapping("/worker/{workerId}")
+    public ResponseEntity<List<JobProposalDto>> getProposalsByWorkerId(@PathVariable String workerId) {
+        List<JobProposalDto> proposals = proposalService.getProposalsByWorkerId(workerId);
+        return ResponseEntity.ok(proposals);
+    }
+    
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<JobProposalDto>> getProposalsByClientId(@PathVariable String clientId) {
+        List<JobProposalDto> proposals = proposalService.getProposalsByClientId(clientId);
+        return ResponseEntity.ok(proposals);
+    }
+    
     public static class CreateProposalRequest {
         private String chatId;
         private String senderId;
         private String senderName;
         private String senderType;
+        private String receiverId;
+        private String receiverName;
+        private String receiverType;
         private String title;
         private String description;
         private Integer duration;
@@ -71,6 +90,12 @@ public class ProposalController {
         public void setSenderName(String senderName) { this.senderName = senderName; }
         public String getSenderType() { return senderType; }
         public void setSenderType(String senderType) { this.senderType = senderType; }
+        public String getReceiverId() { return receiverId; }
+        public void setReceiverId(String receiverId) { this.receiverId = receiverId; }
+        public String getReceiverName() { return receiverName; }
+        public void setReceiverName(String receiverName) { this.receiverName = receiverName; }
+        public String getReceiverType() { return receiverType; }
+        public void setReceiverType(String receiverType) { this.receiverType = receiverType; }
         public String getTitle() { return title; }
         public void setTitle(String title) { this.title = title; }
         public String getDescription() { return description; }
