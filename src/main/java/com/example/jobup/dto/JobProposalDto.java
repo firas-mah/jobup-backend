@@ -19,6 +19,12 @@ public class JobProposalDto {
     private String senderId;
     private String senderName;
     private String senderType;
+    
+    // NEW RECEIVER FIELDS
+    private String receiverId;
+    private String receiverName;
+    private String receiverType;
+    
     private String title;
     private String description;
     private Integer duration;

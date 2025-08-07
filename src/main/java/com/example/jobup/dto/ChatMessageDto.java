@@ -18,6 +18,12 @@ public class ChatMessageDto {
     private String senderId;
     private String senderName;
     private String senderType;
+    
+    // NEW RECEIVER FIELDS
+    private String receiverId;
+    private String receiverName;
+    private String receiverType;
+    
     private String content;
     private LocalDateTime timestamp;
     private ChatMessage.MessageType messageType;

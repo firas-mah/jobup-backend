@@ -12,6 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class ChatController {
     
     private final ChatService chatService;
@@ -32,6 +33,9 @@ public class ChatController {
                 request.getSenderId(),
                 request.getSenderName(),
                 request.getSenderType(),
+                request.getReceiverId(),
+                request.getReceiverName(),
+                request.getReceiverType(),
                 request.getContent(),
                 ChatMessage.MessageType.TEXT
         );
@@ -39,10 +43,27 @@ public class ChatController {
         return ResponseEntity.ok(message);
     }
     
+    @GetMapping("/receiver/{receiverId}")
+    public ResponseEntity<List<ChatMessageDto>> getMessagesByReceiverId(@PathVariable String receiverId) {
+        List<ChatMessageDto> messages = chatService.getMessagesByReceiverId(receiverId);
+        return ResponseEntity.ok(messages);
+    }
+    
+    @GetMapping("/receiver/{receiverId}/type/{receiverType}")
+    public ResponseEntity<List<ChatMessageDto>> getMessagesByReceiverIdAndType(
+            @PathVariable String receiverId,
+            @PathVariable String receiverType) {
+        List<ChatMessageDto> messages = chatService.getMessagesByReceiverIdAndType(receiverId, receiverType);
+        return ResponseEntity.ok(messages);
+    }
+    
     public static class SendMessageRequest {
         private String senderId;
         private String senderName;
         private String senderType;
+        private String receiverId;
+        private String receiverName;
+        private String receiverType;
         private String content;
         
         // Getters and setters
@@ -52,6 +73,12 @@ public class ChatController {
         public void setSenderName(String senderName) { this.senderName = senderName; }
         public String getSenderType() { return senderType; }
         public void setSenderType(String senderType) { this.senderType = senderType; }
+        public String getReceiverId() { return receiverId; }
+        public void setReceiverId(String receiverId) { this.receiverId = receiverId; }
+        public String getReceiverName() { return receiverName; }
+        public void setReceiverName(String receiverName) { this.receiverName = receiverName; }
+        public String getReceiverType() { return receiverType; }
+        public void setReceiverType(String receiverType) { this.receiverType = receiverType; }
         public String getContent() { return content; }
         public void setContent(String content) { this.content = content; }
     }

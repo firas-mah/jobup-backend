@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/chat/**").permitAll() // Allow chat endpoints
                         .requestMatchers("/api/proposals/**").permitAll() // Allow proposal endpoints
                         .requestMatchers("/api/deals/**").permitAll() // Allow deal endpoints
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/posts").hasRole("CLIENT")
                         // Protected endpoints - will be configured later
                         .anyRequest().authenticated()
                 )
