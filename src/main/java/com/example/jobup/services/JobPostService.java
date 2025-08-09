@@ -2,7 +2,10 @@ package com.example.jobup.services;
 
 import com.example.jobup.dto.JobPostDto;
 import com.example.jobup.entities.JobPost;
+import com.example.jobup.entities.Notification;
 import com.example.jobup.repositories.JobPostRepository;
+import com.example.jobup.repositories.UserRepository;
+import com.example.jobup.entities.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +18,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JobPostService {
     private final JobPostRepository jobPostRepository;
+    private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     public JobPostDto createPost(JobPostDto dto) {
         JobPost post = JobPost.builder()
@@ -34,11 +39,35 @@ public class JobPostService {
 
     public JobPostDto likePost(String postId, String workerId) {
         JobPost post = jobPostRepository.findById(postId).orElseThrow();
-        if (post.getLikes().contains(workerId)) {
+        boolean wasLiked = post.getLikes().contains(workerId);
+
+        if (wasLiked) {
             post.getLikes().remove(workerId);
         } else {
             post.getLikes().add(workerId);
+
+            // Create notification for post owner (only if it's not the owner liking their own post)
+            if (!workerId.equals(post.getCreatedById())) {
+                try {
+                    User worker = userRepository.findById(workerId).orElse(null);
+                    String workerName = worker != null ? worker.getUsername() : "Someone";
+
+                    notificationService.createNotification(
+                        post.getCreatedById(),
+                        post.getCreatedByName(),
+                        workerId,
+                        workerName,
+                        postId,
+                        post.getTitle(),
+                        Notification.NotificationType.POST_LIKED,
+                        null
+                    );
+                } catch (Exception e) {
+                    System.err.println("Failed to create like notification: " + e.getMessage());
+                }
+            }
         }
+
         return toDto(jobPostRepository.save(post));
     }
 
@@ -62,7 +91,41 @@ public class JobPostService {
                 .createdAt(LocalDateTime.now())
                 .build();
         post.getComments().add(comment);
+
+        // Create notification for post owner (only if it's not the owner commenting on their own post)
+        if (!commentDto.getAuthorId().equals(post.getCreatedById())) {
+            try {
+                notificationService.createNotification(
+                    post.getCreatedById(),
+                    post.getCreatedByName(),
+                    commentDto.getAuthorId(),
+                    commentDto.getAuthorName(),
+                    postId,
+                    post.getTitle(),
+                    Notification.NotificationType.POST_COMMENTED,
+                    null
+                );
+            } catch (Exception e) {
+                System.err.println("Failed to create comment notification: " + e.getMessage());
+            }
+        }
+
         return toDto(jobPostRepository.save(post));
+    }
+
+    public List<JobPostDto> getSavedPostsByUserId(String userId) {
+        return jobPostRepository.findAll().stream()
+                .filter(post -> post.getSavedBy().contains(userId))
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<JobPostDto> getPostsByCreatorId(String userId) {
+        return jobPostRepository.findAll().stream()
+                .filter(post -> userId.equals(post.getCreatedById()))
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())) // Sort by newest first
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     private JobPostDto toDto(JobPost post) {
