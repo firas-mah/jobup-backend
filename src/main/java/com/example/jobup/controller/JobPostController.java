@@ -39,4 +39,14 @@ public class JobPostController {
     public JobPostDto addComment(@PathVariable String postId, @RequestBody JobPostDto.CommentDto commentDto) {
         return jobPostService.addComment(postId, commentDto);
     }
+
+    @GetMapping("/saved/{userId}")
+    public List<JobPostDto> getSavedPostsByUserId(@PathVariable String userId) {
+        return jobPostService.getSavedPostsByUserId(userId);
+    }
+
+    @GetMapping("/created-by/{userId}")
+    public List<JobPostDto> getPostsByCreatorId(@PathVariable String userId) {
+        return jobPostService.getPostsByCreatorId(userId);
+    }
 }
