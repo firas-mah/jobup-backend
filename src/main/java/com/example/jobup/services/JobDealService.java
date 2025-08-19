@@ -15,9 +15,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class JobDealService {
-    
+
     private final JobDealRepository dealRepository;
     private final JobProposalRepository proposalRepository;
+    private final WorkerRatingService workerRatingService;
     
     public JobDealDto createDealFromProposal(String proposalId) {
         JobProposal proposal = proposalRepository.findById(proposalId)
@@ -60,13 +61,44 @@ public class JobDealService {
     }
     
     public JobDealDto addRating(String dealId, Integer rating, String review) {
+        // Validate rating range
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
+        }
+
         JobDeal deal = dealRepository.findById(dealId)
                 .orElseThrow(() -> new RuntimeException("Deal not found"));
-        
+
+        // Validate deal status - only completed deals can be rated
+        if (deal.getStatus() != JobDeal.DealStatus.COMPLETED) {
+            throw new IllegalStateException("Only completed deals can be rated");
+        }
+
+        // Prevent duplicate ratings
+        if (deal.getRating() != null) {
+            throw new IllegalStateException("This deal has already been rated");
+        }
+
+        // Validate review length if provided
+        if (review != null && review.length() > 1000) {
+            throw new IllegalArgumentException("Review cannot exceed 1000 characters");
+        }
+
         deal.setRating(rating);
         deal.setReview(review);
-        
+
         JobDeal savedDeal = dealRepository.save(deal);
+
+        // Update worker's average rating
+        if (savedDeal.getWorkerId() != null) {
+            try {
+                workerRatingService.updateWorkerRating(savedDeal.getWorkerId());
+            } catch (Exception e) {
+                // Log error but don't fail the rating submission
+                System.err.println("Failed to update worker rating: " + e.getMessage());
+            }
+        }
+
         return convertToDto(savedDeal);
     }
     
@@ -75,6 +107,34 @@ public class JobDealService {
         return deals.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<JobDealDto> getDealsByWorkerId(String workerId) {
+        List<JobDeal> deals = dealRepository.findByWorkerId(workerId);
+        return deals.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<JobDealDto> getCompletedDealsByWorkerId(String workerId) {
+        List<JobDeal> deals = dealRepository.findByWorkerIdAndStatus(workerId, JobDeal.DealStatus.COMPLETED);
+        return deals.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<JobDealDto> getRatedDealsByWorkerId(String workerId) {
+        List<JobDeal> deals = dealRepository.findCompletedDealsWithRatingsByWorkerId(workerId);
+        return deals.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    public boolean canRateDeal(String dealId) {
+        JobDeal deal = dealRepository.findById(dealId)
+                .orElseThrow(() -> new RuntimeException("Deal not found"));
+
+        return deal.getStatus() == JobDeal.DealStatus.COMPLETED && deal.getRating() == null;
     }
     
     private JobDealDto convertToDto(JobDeal deal) {

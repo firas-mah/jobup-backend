@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()  // Allow WebSocket connections
                         .requestMatchers("/topic/**").permitAll() // Allow WebSocket topics
@@ -49,6 +50,19 @@ public class SecurityConfig {
                         .requestMatchers("/api/proposals/**").permitAll() // Allow proposal endpoints
                         .requestMatchers("/api/deals/**").permitAll() // Allow deal endpoints
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/posts").hasRole("CLIENT")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/posts/multipart").hasRole("CLIENT")
+                        // File upload endpoints - require authentication
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/files/upload").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/files/**").authenticated()
+                        // Public access for profile pictures and portfolios
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/owner/*/category/PROFILE_PICTURE").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/owner/*/category/WORKER_PORTFOLIO").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/owner/*/category/WORKER_CERTIFICATE").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/owner/**").authenticated()
+                        // File viewing/downloading - public for now (access control in service layer)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/*/download").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/*/view").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/*").permitAll()
                         // Protected endpoints - will be configured later
                         .anyRequest().authenticated()
                 )

@@ -60,6 +60,8 @@ public class AuthService {
                 .map(Enum::name)
                 .collect(Collectors.toList()));
 
+        extraClaims.put("preferred_username", user.getUsername());
+
         String token = jwtUtil.generateToken(savedUser, extraClaims);
 
         return AuthResponseDto.builder()
@@ -91,6 +93,8 @@ public class AuthService {
             extraClaims.put("roles", user.getRoles().stream()
                     .map(Enum::name)
                     .collect(Collectors.toList()));
+
+            extraClaims.put("preferred_username", user.getUsername());
 
             String token = jwtUtil.generateToken(user, extraClaims);
 
@@ -152,6 +156,8 @@ public class AuthService {
         extraClaims.put("roles", savedUser.getRoles().stream()
                 .map(Enum::name)
                 .collect(Collectors.toList()));
+
+        extraClaims.put("preferred_username", user.getUsername());
 
         String token = jwtUtil.generateToken(savedUser, extraClaims);
 

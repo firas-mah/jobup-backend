@@ -10,4 +10,7 @@ import java.util.List;
 public interface WorkerRepo extends MongoRepository<Worker, String> {
     List<Worker> findByLocationIgnoreCase(String location);
     List<Worker> findByJobTypeIgnoreCase(String jobType);
+    List<Worker> findByIdNot(String id);
+    List<Worker> findByLocationIgnoreCaseAndIdNot(String location, String id);
+    List<Worker> findByJobTypeIgnoreCaseAndIdNot(String jobType, String id);
     }

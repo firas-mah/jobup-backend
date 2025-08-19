@@ -27,8 +27,19 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String extractUsername(String token) {
+    // subject is now the userId
+    public String extractUserId(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    // keep old name if other code still calls it; now returns userId
+    public String extractUsername(String token) {
+        return extractUserId(token);
+    }
+
+    // get display username from claim
+    public String extractPreferredUsername(String token) {
+        return extractClaim(token, c -> (String) c.get("preferred_username"));
     }
 
     public Date extractExpiration(String token) {
@@ -54,11 +65,19 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
+        claims.put("preferred_username", userDetails.getUsername());
+        String userId = (userDetails instanceof com.example.jobup.entities.User u) ? u.getId()
+                : userDetails.getUsername();
+        return createToken(claims, userId);
     }
 
     public String generateToken(UserDetails userDetails, Map<String, Object> extraClaims) {
-        return createToken(extraClaims, userDetails.getUsername());
+        // If your principal is your own User entity, grab the DB id; otherwise fall back
+        String userId = (userDetails instanceof com.example.jobup.entities.User u) ? u.getId()
+                : userDetails.getUsername(); // fallback for safety
+        // Ensure preferred_username is present for downstream lookups
+        extraClaims.putIfAbsent("preferred_username", userDetails.getUsername());
+        return createToken(extraClaims, userId);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
@@ -73,8 +92,8 @@ public class JwtUtil {
 
     public Boolean validateToken(String token, UserDetails userDetails) {
         try {
-            final String username = extractUsername(token);
-            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+            final String preferred = extractPreferredUsername(token);
+            return (preferred != null && preferred.equals(userDetails.getUsername()) && !isTokenExpired(token));
         } catch (JwtException | IllegalArgumentException e) {
             log.error("JWT validation error: {}", e.getMessage());
             return false;

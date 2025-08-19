@@ -9,7 +9,8 @@ import com.example.jobup.entities.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -26,16 +27,22 @@ public class JobPostService {
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .location(dto.getLocation())
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .createdById(dto.getCreatedById())
                 .createdByName(dto.getCreatedByName())
+                .attachmentFileIds(dto.getAttachmentFileIds() != null ? dto.getAttachmentFileIds() : new ArrayList<>())
                 .build();
         return toDto(jobPostRepository.save(post));
     }
 
     public List<JobPostDto> getAllPosts() {
-        return jobPostRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());
+        return jobPostRepository
+                .findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
+
 
     public JobPostDto likePost(String postId, String workerId) {
         JobPost post = jobPostRepository.findById(postId).orElseThrow();
@@ -88,7 +95,7 @@ public class JobPostService {
                 .authorId(commentDto.getAuthorId())
                 .authorName(commentDto.getAuthorName())
                 .content(commentDto.getContent())
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
         post.getComments().add(comment);
 
@@ -114,19 +121,22 @@ public class JobPostService {
     }
 
     public List<JobPostDto> getSavedPostsByUserId(String userId) {
-        return jobPostRepository.findAll().stream()
-                .filter(post -> post.getSavedBy().contains(userId))
+        return jobPostRepository
+                .findBySavedByContains(userId, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
+                .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
+
     public List<JobPostDto> getPostsByCreatorId(String userId) {
-        return jobPostRepository.findAll().stream()
-                .filter(post -> userId.equals(post.getCreatedById()))
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())) // Sort by newest first
+        return jobPostRepository
+                .findByCreatedByIdOrderByCreatedAtDesc(userId)
+                .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
+
 
     private JobPostDto toDto(JobPost post) {
         return JobPostDto.builder()
@@ -139,6 +149,7 @@ public class JobPostService {
                 .createdByName(post.getCreatedByName())
                 .likes(post.getLikes())
                 .savedBy(post.getSavedBy())
+                .attachmentFileIds(post.getAttachmentFileIds())
                 .comments(post.getComments() != null ? post.getComments().stream().map(c ->
                         JobPostDto.CommentDto.builder()
                                 .id(c.getId())
