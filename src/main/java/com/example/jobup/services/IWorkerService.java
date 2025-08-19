@@ -16,4 +16,9 @@ public interface IWorkerService {
     List<WorkerResponseDto> searchByLocation(String location) ;
     List<WorkerResponseDto> searchByJobType(String jobType) ;
     WorkerResponseDto updateWorker(String id, WorkerUpdateDto dto);
+    public List<WorkerResponseDto> getAllWorkersExcept(String userId) ;
+    public List<WorkerResponseDto> searchByLocationExcept(String location, String userId) ;
+    public List<WorkerResponseDto> searchByJobTypeExcept(String jobType, String userId) ;
+    public List<WorkerResponseDto> getAllWorkers(String excludeUserId) ;
+    public List<WorkerResponseDto> searchByLocation(String location, String excludeUserId) ;    public List<WorkerResponseDto> searchByJobType(String jobType, String excludeUserId) ;
     }

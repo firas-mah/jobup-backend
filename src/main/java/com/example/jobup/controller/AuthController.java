@@ -50,13 +50,12 @@ public class AuthController {
     @PutMapping("/update")
     @Operation(summary = "Update current user info")
     public ResponseEntity<AuthResponseDto> updateCurrentUser(
-        @Valid @RequestBody UserUpdateRequestDto request,
-        Authentication authentication
+            @Valid @RequestBody UserUpdateRequestDto request,
+            Authentication authentication
     ) {
-        User user = (User) authentication.getPrincipal();
-        
+        String userId = authentication.getName(); // now the DB id
         try {
-            AuthResponseDto response = authService.updateUser(user.getId(), request);
+            AuthResponseDto response = authService.updateUser(userId, request);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
@@ -66,13 +65,17 @@ public class AuthController {
     @GetMapping("/me")
     @Operation(summary = "Get current user info")
     public ResponseEntity<AuthResponseDto> getCurrentUser(Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
-        
+        // roles from authorities; id from Authentication name
+        String userId = authentication.getName();
+        var roles = authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .collect(Collectors.toList());
+
         return ResponseEntity.ok(AuthResponseDto.builder()
-                .roles(user.getRoles().stream()
-                        .map(Enum::name)
-                        .collect(Collectors.toList()))
+                .userId(userId)
+                .roles(roles)
                 .build());
     }
+
 }
 

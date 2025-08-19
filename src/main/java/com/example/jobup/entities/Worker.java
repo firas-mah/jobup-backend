@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @Document(collection = "worker") // MongoDB annotation
 @Getter
@@ -22,5 +23,12 @@ public class Worker {
     private String location;      // e.g. "Ariana", "Sfax"
     private double rating;        // average rating
     private String description;
+
+    // File references for portfolio and certificates
+    @Builder.Default
+    private List<String> portfolioFileIds = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> certificateFileIds = new ArrayList<>();
 
 }

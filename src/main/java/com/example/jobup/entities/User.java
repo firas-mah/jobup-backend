@@ -13,6 +13,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 
 @Document(collection = "users")
 @Getter
@@ -30,10 +32,11 @@ public class User implements UserDetails {
     @Indexed(unique = true)
     private String email;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Builder.Default
-    private Set<Role> roles = Set.of(Role.ROLE_CLIENT);
+    private Set<Role> roles = new java.util.HashSet<>(java.util.List.of(Role.ROLE_CLIENT));
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -49,6 +52,9 @@ public class User implements UserDetails {
 
     @Builder.Default
     private boolean credentialsNonExpired = true;
+
+    // Profile picture file ID
+    private String profilePictureId;
 
     // UserDetails implementation
     @Override
