@@ -1,9 +1,10 @@
+// NotificationDto.java
 package com.example.jobup.dto;
 
-import com.example.jobup.entities.Notification;
+import com.example.jobup.entities.NotificationType;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -11,15 +12,20 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class NotificationDto {
     private String id;
+
     private String recipientId;
     private String recipientName;
     private String senderId;
     private String senderName;
-    private String postId;
-    private String postTitle;
-    private Notification.NotificationType type;
+
+    // Generic reference (proposal/deal/post...)
+    private String refId;
+    private String refTitle;
+
+    private NotificationType type;
     private String message;
     private String actionUrl;
-    private boolean isRead;
-    private LocalDateTime createdAt;
+    private boolean read;
+
+    private Instant createdAt;
 }

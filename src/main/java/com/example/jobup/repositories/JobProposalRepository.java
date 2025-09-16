@@ -9,10 +9,7 @@ import java.util.List;
 @Repository
 public interface JobProposalRepository extends MongoRepository<JobProposal, String> {
     List<JobProposal> findByChatIdOrderByCreatedAtDesc(String chatId);
-    List<JobProposal> findBySenderId(String senderId);
-    
-    // NEW METHODS
-    List<JobProposal> findByReceiverIdOrderByCreatedAtDesc(String receiverId);
-    List<JobProposal> findByReceiverIdAndStatusOrderByCreatedAtDesc(String receiverId, JobProposal.ProposalStatus status);
-    List<JobProposal> findByReceiverIdAndReceiverTypeOrderByCreatedAtDesc(String receiverId, String receiverType);
+    List<JobProposal> findByWorkerIdOrderByCreatedAtDesc(String workerId);
+    List<JobProposal> findByClientIdOrderByCreatedAtDesc(String clientId);
+
 }

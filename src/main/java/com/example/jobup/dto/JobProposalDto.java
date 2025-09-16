@@ -1,13 +1,12 @@
+// JobProposalDto.java
 package com.example.jobup.dto;
 
-import com.example.jobup.entities.JobProposal;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.example.jobup.entities.ProposalStatus;
+import com.example.jobup.entities.UserType;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -16,21 +15,30 @@ import java.time.LocalDateTime;
 public class JobProposalDto {
     private String id;
     private String chatId;
+
+    // Sender
     private String senderId;
     private String senderName;
-    private String senderType;
-    
-    // NEW RECEIVER FIELDS
+    private UserType senderType;
+
+    // Receiver
     private String receiverId;
     private String receiverName;
-    private String receiverType;
-    
+    private UserType receiverType;
+
+    // Canonical roles for downstream logic
+    private String clientId;
+    private String workerId;
+
     private String title;
     private String description;
-    private Integer duration;
+    private Integer durationMinutes;
     private BigDecimal price;
     private String location;
-    private LocalDateTime scheduledTime;
-    private LocalDateTime createdAt;
-    private JobProposal.ProposalStatus status;
+    private Instant scheduledAt;
+
+    private ProposalStatus status;
+
+    private Instant createdAt;
+    private Instant updatedAt;
 }

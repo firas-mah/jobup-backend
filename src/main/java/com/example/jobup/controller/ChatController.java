@@ -1,9 +1,13 @@
 package com.example.jobup.controller;
 
 import com.example.jobup.dto.ChatMessageDto;
-import com.example.jobup.entities.ChatMessage;
+import com.example.jobup.entities.MessageType;
+import com.example.jobup.entities.UserType;
 import com.example.jobup.services.ChatService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,72 +18,50 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ChatController {
-    
+
     private final ChatService chatService;
-    
-    @GetMapping("/{chatId}/messages")
+
+    @GetMapping(value = "/{chatId}/messages", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ChatMessageDto>> getChatMessages(@PathVariable String chatId) {
-        List<ChatMessageDto> messages = chatService.getChatMessages(chatId);
-        return ResponseEntity.ok(messages);
+        return ResponseEntity.ok(chatService.getChatMessages(chatId));
     }
-    
+
     @PostMapping("/{chatId}/messages")
     public ResponseEntity<ChatMessageDto> sendMessage(
             @PathVariable String chatId,
-            @RequestBody SendMessageRequest request) {
-        
-        ChatMessageDto message = chatService.sendMessage(
+            @RequestBody SendMessageRequest req
+    ) {
+        ChatMessageDto dto = chatService.sendMessage(
                 chatId,
-                request.getSenderId(),
-                request.getSenderName(),
-                request.getSenderType(),
-                request.getReceiverId(),
-                request.getReceiverName(),
-                request.getReceiverType(),
-                request.getContent(),
-                ChatMessage.MessageType.TEXT
+                req.getSenderId(), req.getSenderName(), req.getSenderType(),
+                req.getReceiverId(), req.getReceiverName(), req.getReceiverType(),
+                req.getContent(), MessageType.TEXT,
+                null, null // proposalId, dealId (not a proposal message)
         );
-        
-        return ResponseEntity.ok(message);
+        return ResponseEntity.ok(dto);
     }
-    
-    @GetMapping("/receiver/{receiverId}")
+
+    @GetMapping(value = "/receiver/{receiverId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ChatMessageDto>> getMessagesByReceiverId(@PathVariable String receiverId) {
-        List<ChatMessageDto> messages = chatService.getMessagesByReceiverId(receiverId);
-        return ResponseEntity.ok(messages);
+        return ResponseEntity.ok(chatService.getMessagesByReceiverId(receiverId));
     }
-    
-    @GetMapping("/receiver/{receiverId}/type/{receiverType}")
+
+    @GetMapping(value = "/receiver/{receiverId}/type/{receiverType}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ChatMessageDto>> getMessagesByReceiverIdAndType(
             @PathVariable String receiverId,
-            @PathVariable String receiverType) {
-        List<ChatMessageDto> messages = chatService.getMessagesByReceiverIdAndType(receiverId, receiverType);
-        return ResponseEntity.ok(messages);
+            @PathVariable UserType receiverType
+    ) {
+        return ResponseEntity.ok(chatService.getMessagesByReceiverIdAndType(receiverId, receiverType));
     }
-    
+
+    @Getter @Setter
     public static class SendMessageRequest {
         private String senderId;
         private String senderName;
-        private String senderType;
+        private UserType senderType;
         private String receiverId;
         private String receiverName;
-        private String receiverType;
+        private UserType receiverType;
         private String content;
-        
-        // Getters and setters
-        public String getSenderId() { return senderId; }
-        public void setSenderId(String senderId) { this.senderId = senderId; }
-        public String getSenderName() { return senderName; }
-        public void setSenderName(String senderName) { this.senderName = senderName; }
-        public String getSenderType() { return senderType; }
-        public void setSenderType(String senderType) { this.senderType = senderType; }
-        public String getReceiverId() { return receiverId; }
-        public void setReceiverId(String receiverId) { this.receiverId = receiverId; }
-        public String getReceiverName() { return receiverName; }
-        public void setReceiverName(String receiverName) { this.receiverName = receiverName; }
-        public String getReceiverType() { return receiverType; }
-        public void setReceiverType(String receiverType) { this.receiverType = receiverType; }
-        public String getContent() { return content; }
-        public void setContent(String content) { this.content = content; }
     }
-} 
+}

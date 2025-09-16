@@ -1,9 +1,11 @@
 package com.example.jobup.config;
 
 import com.example.jobup.services.UserDetailsServiceImpl;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -38,36 +40,68 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // ===== Public =====
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/ws/**").permitAll()  // Allow WebSocket connections
-                        .requestMatchers("/topic/**").permitAll() // Allow WebSocket topics
-                        .requestMatchers("/app/**").permitAll()   // Allow WebSocket app destinations
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/workers/**").permitAll() // Temporarily allow for testing
-                        .requestMatchers("/api/chat/**").permitAll() // Allow chat endpoints
-                        .requestMatchers("/api/proposals/**").permitAll() // Allow proposal endpoints
-                        .requestMatchers("/api/deals/**").permitAll() // Allow deal endpoints
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/posts").hasRole("CLIENT")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/posts/multipart").hasRole("CLIENT")
-                        // File upload endpoints - require authentication
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/files/upload").authenticated()
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/files/**").authenticated()
-                        // Public access for profile pictures and portfolios
+                        .requestMatchers("/ws/**", "/topic/**", "/app/**").permitAll()
+
+                        // Files: public viewing of profile/portfolio & direct file view/download
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/owner/*/category/PROFILE_PICTURE").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/owner/*/category/WORKER_PORTFOLIO").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/owner/*/category/WORKER_CERTIFICATE").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/owner/**").authenticated()
-                        // File viewing/downloading - public for now (access control in service layer)
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/*/download").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/*/view").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/*").permitAll()
-                        // Protected endpoints - will be configured later
+
+                        // ===== Open READ-ONLY catalog (optional) =====
+                        // Allow anyone to browse workers, but protect writes
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/workers/**").permitAll()
+
+                        // ===== Strict role-based areas =====
+                        // All client-area APIs
+                        .requestMatchers("/api/client/**").hasRole("CLIENT")
+
+                        // All worker-area APIs
+                        .requestMatchers("/api/worker/**").hasRole("WORKER")
+
+                        // Files: write/delete require auth (any logged-in user; tighten if needed)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,   "/api/files/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/files/**").authenticated()
+
+                        // Example: posts created by CLIENTS only
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/posts").hasRole("CLIENT")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/posts/multipart").hasRole("CLIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/deals/worker/*/rating-stats").hasAnyRole("CLIENT","WORKER")
+
+                        .requestMatchers(HttpMethod.GET,  "/api/deals/*/can-rate").hasAnyRole("CLIENT","WORKER")
+                        .requestMatchers(HttpMethod.POST, "/api/deals/*/rating").hasAnyRole("CLIENT","WORKER")
+
+
+                        // If you had previously left these open, REMOVE those permitAll lines:
+                        // .requestMatchers("/api/chat/**").permitAll()
+                        // .requestMatchers("/api/proposals/**").permitAll()
+                        // .requestMatchers("/api/deals/**").permitAll()
+                        // and instead place them under the proper namespace:
+                        //   /api/client/chat/**, /api/worker/chat/**, /api/client/deals/**, etc.
+
+                        // Everything else must be authenticated
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint((req, res, ex) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json");
+                            res.setCharacterEncoding("UTF-8");
+                            res.getWriter().write("{\"error\":\"UNAUTHORIZED\",\"message\":\"Invalid or missing token\"}");
+                        })
+                        .accessDeniedHandler((req, res, ex) -> {
+                            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            res.setContentType("application/json");
+                            res.setCharacterEncoding("UTF-8");
+                            res.getWriter().write("{\"error\":\"FORBIDDEN\",\"message\":\"Insufficient role for this resource\"}");
+                        })
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
