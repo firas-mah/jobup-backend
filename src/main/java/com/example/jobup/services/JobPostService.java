@@ -3,6 +3,7 @@ package com.example.jobup.services;
 import com.example.jobup.dto.JobPostDto;
 import com.example.jobup.entities.JobPost;
 import com.example.jobup.entities.Notification;
+import com.example.jobup.entities.NotificationType;
 import com.example.jobup.repositories.JobPostRepository;
 import com.example.jobup.repositories.UserRepository;
 import com.example.jobup.entities.User;
@@ -66,7 +67,7 @@ public class JobPostService {
                         workerName,
                         postId,
                         post.getTitle(),
-                        Notification.NotificationType.POST_LIKED,
+                        NotificationType.POST_LIKED,
                         null
                     );
                 } catch (Exception e) {
@@ -102,14 +103,17 @@ public class JobPostService {
         // Create notification for post owner (only if it's not the owner commenting on their own post)
         if (!commentDto.getAuthorId().equals(post.getCreatedById())) {
             try {
+                User commenter = userRepository.findById(commentDto.getAuthorId()).orElse(null);
+                String commenterName = commenter != null ? commenter.getUsername() : "Someone";
+                
                 notificationService.createNotification(
                     post.getCreatedById(),
                     post.getCreatedByName(),
                     commentDto.getAuthorId(),
-                    commentDto.getAuthorName(),
+                    commenterName,  // ✅ Now fetched from database like likes
                     postId,
                     post.getTitle(),
-                    Notification.NotificationType.POST_COMMENTED,
+                    NotificationType.POST_COMMENTED,
                     null
                 );
             } catch (Exception e) {

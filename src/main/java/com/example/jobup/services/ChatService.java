@@ -2,30 +2,34 @@ package com.example.jobup.services;
 
 import com.example.jobup.dto.ChatMessageDto;
 import com.example.jobup.entities.ChatMessage;
+import com.example.jobup.entities.MessageType;
+import com.example.jobup.entities.UserType;
 import com.example.jobup.repositories.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ChatService {
-    
+
     private final ChatMessageRepository chatMessageRepository;
-    
+
     public List<ChatMessageDto> getChatMessages(String chatId) {
-        List<ChatMessage> messages = chatMessageRepository.findByChatIdOrderByTimestampAsc(chatId);
-        return messages.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        // NOTE: repo method should sort by createdAt
+        List<ChatMessage> messages = chatMessageRepository.findByChatIdOrderByCreatedAtAsc(chatId);
+        return messages.stream().map(this::toDto).collect(Collectors.toList());
     }
-    
-    public ChatMessageDto sendMessage(String chatId, String senderId, String senderName, 
-                                   String senderType, String receiverId, String receiverName,
-                                   String receiverType, String content, ChatMessage.MessageType messageType) {
+
+    public ChatMessageDto sendMessage(
+            String chatId,
+            String senderId, String senderName, UserType senderType,
+            String receiverId, String receiverName, UserType receiverType,
+            String content, MessageType messageType,
+            String proposalId, String dealId // optional links
+    ) {
         ChatMessage message = ChatMessage.builder()
                 .chatId(chatId)
                 .senderId(senderId)
@@ -36,41 +40,41 @@ public class ChatService {
                 .receiverType(receiverType)
                 .content(content)
                 .messageType(messageType)
-                .timestamp(LocalDateTime.now())
+                .proposalId(proposalId)
+                .dealId(dealId)
+                // createdAt is auto via @CreatedDate
                 .build();
-        
-        ChatMessage savedMessage = chatMessageRepository.save(message);
-        return convertToDto(savedMessage);
+
+        ChatMessage saved = chatMessageRepository.save(message);
+        return toDto(saved);
     }
-    
+
     public List<ChatMessageDto> getMessagesByReceiverId(String receiverId) {
-        List<ChatMessage> messages = chatMessageRepository.findByReceiverIdOrderByTimestampDesc(receiverId);
-        return messages.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        List<ChatMessage> messages = chatMessageRepository.findByReceiverIdOrderByCreatedAtDesc(receiverId);
+        return messages.stream().map(this::toDto).collect(Collectors.toList());
     }
-    
-    public List<ChatMessageDto> getMessagesByReceiverIdAndType(String receiverId, String receiverType) {
-        List<ChatMessage> messages = chatMessageRepository.findByReceiverIdAndReceiverTypeOrderByTimestampDesc(receiverId, receiverType);
-        return messages.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+
+    public List<ChatMessageDto> getMessagesByReceiverIdAndType(String receiverId, UserType receiverType) {
+        List<ChatMessage> messages = chatMessageRepository
+                .findByReceiverIdAndReceiverTypeOrderByCreatedAtDesc(receiverId, receiverType);
+        return messages.stream().map(this::toDto).collect(Collectors.toList());
     }
-    
-    private ChatMessageDto convertToDto(ChatMessage message) {
+
+    private ChatMessageDto toDto(ChatMessage m) {
         return ChatMessageDto.builder()
-                .id(message.getId())
-                .chatId(message.getChatId())
-                .senderId(message.getSenderId())
-                .senderName(message.getSenderName())
-                .senderType(message.getSenderType())
-                .receiverId(message.getReceiverId())
-                .receiverName(message.getReceiverName())
-                .receiverType(message.getReceiverType())
-                .content(message.getContent())
-                .timestamp(message.getTimestamp())
-                .messageType(message.getMessageType())
-                .proposalId(message.getProposalId())
+                .id(m.getId())
+                .chatId(m.getChatId())
+                .senderId(m.getSenderId())
+                .senderName(m.getSenderName())
+                .senderType(m.getSenderType())
+                .receiverId(m.getReceiverId())
+                .receiverName(m.getReceiverName())
+                .receiverType(m.getReceiverType())
+                .content(m.getContent())
+                .messageType(m.getMessageType())
+                .proposalId(m.getProposalId())
+                .dealId(m.getDealId())
+                .createdAt(m.getCreatedAt())
                 .build();
     }
-} 
+}

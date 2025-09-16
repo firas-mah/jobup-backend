@@ -1,12 +1,11 @@
+// ChatMessageDto.java
 package com.example.jobup.dto;
 
-import com.example.jobup.entities.ChatMessage;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.example.jobup.entities.MessageType;
+import com.example.jobup.entities.UserType;
+import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -15,17 +14,23 @@ import java.time.LocalDateTime;
 public class ChatMessageDto {
     private String id;
     private String chatId;
+
+    // Sender
     private String senderId;
     private String senderName;
-    private String senderType;
-    
-    // NEW RECEIVER FIELDS
+    private UserType senderType;
+
+    // Receiver
     private String receiverId;
     private String receiverName;
-    private String receiverType;
-    
+    private UserType receiverType;
+
     private String content;
-    private LocalDateTime timestamp;
-    private ChatMessage.MessageType messageType;
+    private MessageType messageType;
+
+    // Links
     private String proposalId;
+    private String dealId;
+
+    private Instant createdAt;
 }

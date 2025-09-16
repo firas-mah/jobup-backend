@@ -1,9 +1,7 @@
+// WorkerRatingStatsDto.java
 package com.example.jobup.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -12,19 +10,19 @@ import lombok.NoArgsConstructor;
 public class WorkerRatingStatsDto {
     private String workerId;
     private double averageRating;
-    private int totalRatings;
-    private int totalCompletedJobs;
+    private long totalRatings;
+    private long totalCompletedJobs;
     private RatingDistribution ratingDistribution;
-    
+
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RatingDistribution {
-        private int fiveStars;
-        private int fourStars;
-        private int threeStars;
-        private int twoStars;
-        private int oneStar;
+        private long fiveStars;
+        private long fourStars;
+        private long threeStars;
+        private long twoStars;
+        private long oneStar;
     }
 }

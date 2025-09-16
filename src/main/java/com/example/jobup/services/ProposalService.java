@@ -2,25 +2,37 @@ package com.example.jobup.services;
 
 import com.example.jobup.dto.JobProposalDto;
 import com.example.jobup.entities.JobProposal;
+import com.example.jobup.entities.ProposalStatus;
+import com.example.jobup.entities.UserType;
 import com.example.jobup.repositories.JobProposalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProposalService {
-    
+
     private final JobProposalRepository proposalRepository;
-    
-    public JobProposalDto createProposal(String chatId, String senderId, String senderName, 
-                                       String senderType, String receiverId, String receiverName,
-                                       String receiverType, String title, String description, 
-                                       Integer duration, java.math.BigDecimal price, 
-                                       String location, LocalDateTime scheduledTime) {
+
+    public JobProposalDto createProposal(
+            String chatId,
+            String senderId, String senderName, UserType senderType,
+            String receiverId, String receiverName, UserType receiverType,
+            String title, String description,
+            Integer durationMinutes, BigDecimal price,
+            String location, Instant scheduledAt
+    ) {
+        // Derive canonical client/worker from sender/receiver types (safety net)
+        String clientId = senderType == UserType.CLIENT ? senderId
+                : receiverType == UserType.CLIENT ? receiverId : null;
+        String workerId = senderType == UserType.WORKER ? senderId
+                : receiverType == UserType.WORKER ? receiverId : null;
+
         JobProposal proposal = JobProposal.builder()
                 .chatId(chatId)
                 .senderId(senderId)
@@ -29,68 +41,74 @@ public class ProposalService {
                 .receiverId(receiverId)
                 .receiverName(receiverName)
                 .receiverType(receiverType)
+                .clientId(clientId)
+                .workerId(workerId)
                 .title(title)
                 .description(description)
-                .duration(duration)
+                .durationMinutes(durationMinutes)
                 .price(price)
                 .location(location)
-                .scheduledTime(scheduledTime)
-                .createdAt(LocalDateTime.now())
-                .status(JobProposal.ProposalStatus.PENDING)
+                .scheduledAt(scheduledAt)
+                .status(ProposalStatus.PENDING)
+                // createdAt/updatedAt via auditing
                 .build();
-        
-        JobProposal savedProposal = proposalRepository.save(proposal);
-        return convertToDto(savedProposal);
+
+        JobProposal saved = proposalRepository.save(proposal);
+        return toDto(saved);
     }
-    
-    public JobProposalDto updateProposalStatus(String proposalId, JobProposal.ProposalStatus status) {
+
+    public JobProposalDto updateProposalStatus(String proposalId, ProposalStatus status) {
         JobProposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new RuntimeException("Proposal not found"));
-        
+
+        // Allowed transitions: PENDING/NEGOTIATED -> ACCEPTED/DECLINED/NEGOTIATED
+        boolean ok =
+                (proposal.getStatus() == ProposalStatus.PENDING && (status == ProposalStatus.ACCEPTED || status == ProposalStatus.DECLINED || status == ProposalStatus.NEGOTIATED))
+                        || (proposal.getStatus() == ProposalStatus.NEGOTIATED && (status == ProposalStatus.ACCEPTED || status == ProposalStatus.DECLINED || status == ProposalStatus.NEGOTIATED));
+
+        if (!ok) throw new IllegalStateException("Invalid proposal transition: " + proposal.getStatus() + " → " + status);
+
         proposal.setStatus(status);
-        JobProposal savedProposal = proposalRepository.save(proposal);
-        return convertToDto(savedProposal);
+        JobProposal saved = proposalRepository.save(proposal);
+        return toDto(saved);
     }
-    
+
     public List<JobProposalDto> getProposalsByChatId(String chatId) {
-        List<JobProposal> proposals = proposalRepository.findByChatIdOrderByCreatedAtDesc(chatId);
-        return proposals.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        return proposalRepository.findByChatIdOrderByCreatedAtDesc(chatId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<JobProposalDto> getProposalsByWorkerId(String workerId) {
-        List<JobProposal> proposals = proposalRepository.findByReceiverIdAndReceiverTypeOrderByCreatedAtDesc(workerId, "ROLE_WORKER");
-        return proposals.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        return proposalRepository.findByWorkerIdOrderByCreatedAtDesc(workerId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<JobProposalDto> getProposalsByClientId(String clientId) {
-        List<JobProposal> proposals = proposalRepository.findByReceiverIdAndReceiverTypeOrderByCreatedAtDesc(clientId, "CLIENT");
-        return proposals.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        return proposalRepository.findByClientIdOrderByCreatedAtDesc(clientId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
-    
-    private JobProposalDto convertToDto(JobProposal proposal) {
+
+    private JobProposalDto toDto(JobProposal p) {
         return JobProposalDto.builder()
-                .id(proposal.getId())
-                .chatId(proposal.getChatId())
-                .senderId(proposal.getSenderId())
-                .senderName(proposal.getSenderName())
-                .senderType(proposal.getSenderType())
-                .receiverId(proposal.getReceiverId())
-                .receiverName(proposal.getReceiverName())
-                .receiverType(proposal.getReceiverType())
-                .title(proposal.getTitle())
-                .description(proposal.getDescription())
-                .duration(proposal.getDuration())
-                .price(proposal.getPrice())
-                .location(proposal.getLocation())
-                .scheduledTime(proposal.getScheduledTime())
-                .createdAt(proposal.getCreatedAt())
-                .status(proposal.getStatus())
+                .id(p.getId())
+                .chatId(p.getChatId())
+                .senderId(p.getSenderId())
+                .senderName(p.getSenderName())
+                .senderType(p.getSenderType())
+                .receiverId(p.getReceiverId())
+                .receiverName(p.getReceiverName())
+                .receiverType(p.getReceiverType())
+                .clientId(p.getClientId())
+                .workerId(p.getWorkerId())
+                .title(p.getTitle())
+                .description(p.getDescription())
+                .durationMinutes(p.getDurationMinutes())
+                .price(p.getPrice())
+                .location(p.getLocation())
+                .scheduledAt(p.getScheduledAt())
+                .status(p.getStatus())
+                .createdAt(p.getCreatedAt())
+                .updatedAt(p.getUpdatedAt())
                 .build();
     }
-} 
+}
